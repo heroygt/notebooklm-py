@@ -40,6 +40,7 @@ from .helpers import (
     json_error_response,
     json_output_response,
     require_notebook,
+    resolve_artifact_id,
     resolve_notebook_id,
     resolve_source_ids,
     with_client,
@@ -669,7 +670,7 @@ def generate_slide_deck(
     "--artifact",
     "artifact_id",
     required=True,
-    help="Slide deck artifact ID to revise",
+    help="Slide deck artifact ID to revise (full or partial ID)",
 )
 @click.option(
     "--slide",
@@ -708,11 +709,12 @@ def generate_revise_slide(
     async def _run():
         async with NotebookLMClient(client_auth) as client:
             nb_id_resolved = await resolve_notebook_id(client, nb_id)
+            artifact_id_resolved = await resolve_artifact_id(client, nb_id_resolved, artifact_id)
 
             async def _generate():
                 return await client.artifacts.revise_slide(
                     nb_id_resolved,
-                    artifact_id=artifact_id,
+                    artifact_id=artifact_id_resolved,
                     slide_index=slide_index,
                     prompt=description,
                 )
@@ -740,7 +742,7 @@ def generate_revise_slide(
     "--artifact",
     "artifact_id",
     required=True,
-    help="Slide deck artifact ID to revise",
+    help="Slide deck artifact ID to revise (full or partial ID)",
 )
 @click.option(
     "--revision",
@@ -779,11 +781,12 @@ def generate_revise_slides(
     async def _run():
         async with NotebookLMClient(client_auth) as client:
             nb_id_resolved = await resolve_notebook_id(client, nb_id)
+            artifact_id_resolved = await resolve_artifact_id(client, nb_id_resolved, artifact_id)
 
             async def _generate():
                 return await client.artifacts.revise_slides(
                     nb_id_resolved,
-                    artifact_id=artifact_id,
+                    artifact_id=artifact_id_resolved,
                     revisions=revisions,
                 )
 

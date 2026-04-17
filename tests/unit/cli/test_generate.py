@@ -1368,6 +1368,37 @@ class TestGenerateReviseSlide:
 
         assert result.exit_code == 0
 
+    def test_revise_slide_resolves_partial_artifact_id(self, runner, mock_auth):
+        """revise-slide resolves a partial artifact ID before mutating."""
+        with patch_client_for_module("generate") as mock_client_cls:
+            mock_client = create_mock_client()
+            mock_client.artifacts.revise_slide = AsyncMock(
+                return_value={"artifact_id": "art_rev_partial", "status": "processing"}
+            )
+            mock_client_cls.return_value = mock_client
+
+            with patch("notebooklm.cli.helpers.fetch_tokens", new_callable=AsyncMock) as mock_fetch:
+                mock_fetch.return_value = ("csrf", "session")
+                result = runner.invoke(
+                    cli,
+                    [
+                        "generate",
+                        "revise-slide",
+                        "Bold the title",
+                        "--artifact",
+                        "artifact_t",
+                        "--slide",
+                        "1",
+                        "-n",
+                        "nb_123",
+                    ],
+                )
+
+        assert result.exit_code == 0
+        call_kwargs = mock_client.artifacts.revise_slide.call_args
+        assert call_kwargs is not None
+        assert call_kwargs.kwargs.get("artifact_id") == "artifact_test"
+
 
 class TestGenerateReviseSlides:
     """Tests for the 'generate revise-slides' CLI command."""
@@ -1484,6 +1515,38 @@ class TestGenerateReviseSlides:
 
         assert result.exit_code != 0
         assert "SLIDE_INDEX:PROMPT" in result.output
+
+    def test_revise_slides_resolves_partial_artifact_id(self, runner, mock_auth):
+        """revise-slides resolves a partial artifact ID before mutating."""
+        with patch_client_for_module("generate") as mock_client_cls:
+            mock_client = create_mock_client()
+            mock_client.artifacts.revise_slides = AsyncMock(
+                return_value={"artifact_id": "art_rev_multi_partial", "status": "processing"}
+            )
+            mock_client_cls.return_value = mock_client
+
+            with patch("notebooklm.cli.helpers.fetch_tokens", new_callable=AsyncMock) as mock_fetch:
+                mock_fetch.return_value = ("csrf", "session")
+                result = runner.invoke(
+                    cli,
+                    [
+                        "generate",
+                        "revise-slides",
+                        "--artifact",
+                        "artifact_t",
+                        "--revision",
+                        "0:Move the title up",
+                        "--revision",
+                        "3:Remove taxonomy",
+                        "-n",
+                        "nb_123",
+                    ],
+                )
+
+        assert result.exit_code == 0
+        call_kwargs = mock_client.artifacts.revise_slides.call_args
+        assert call_kwargs is not None
+        assert call_kwargs.kwargs.get("artifact_id") == "artifact_test"
 
 
 # =============================================================================

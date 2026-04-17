@@ -144,8 +144,8 @@ All generate commands support:
 | `video [description]` | `--format [explainer\|brief\|cinematic]`, `--style [auto\|classic\|whiteboard\|kawaii\|anime\|watercolor\|retro-print\|heritage\|paper-craft]`, `--wait` | `generate video "Explainer for kids"` |
 | `cinematic-video [description]` | Alias for `video --format cinematic`; supports the same options | `generate cinematic-video "Documentary about quantum physics"` |
 | `slide-deck [description]` | `--format [detailed\|presenter]`, `--length [default\|short]`, `--wait` | `generate slide-deck` |
-| `revise-slide <description>` | `-a/--artifact <id>` (required), `--slide N` (required), `--wait` | `generate revise-slide "Move title up" --artifact <id> --slide 0` |
-| `revise-slides` | `-a/--artifact <id>` (required), repeatable `--revision "N:PROMPT"`, `--wait` | `generate revise-slides --artifact <id> --revision "0:Move title up" --revision "3:Remove taxonomy"` |
+| `revise-slide <description>` | `-a/--artifact <id>` (required, full or partial), `--slide N` (required), `--wait` | `generate revise-slide "Move title up" --artifact <id> --slide 0` |
+| `revise-slides` | `-a/--artifact <id>` (required, full or partial), repeatable `--revision "N:PROMPT"`, `--wait` | `generate revise-slides --artifact <id> --revision "0:Move title up" --revision "3:Remove taxonomy"` |
 | `quiz [description]` | `--difficulty [easy\|medium\|hard]`, `--quantity [fewer\|standard\|more]`, `--wait` | `generate quiz --difficulty hard` |
 | `flashcards [description]` | `--difficulty [easy\|medium\|hard]`, `--quantity [fewer\|standard\|more]`, `--wait` | `generate flashcards` |
 | `infographic [description]` | `--orientation [landscape\|portrait\|square]`, `--detail [concise\|standard\|detailed]`, `--style [auto\|sketch-note\|professional\|bento-grid\|editorial\|instructional\|bricks\|clay\|anime\|kawaii\|scientific]`, `--wait` | `generate infographic` |
@@ -647,7 +647,7 @@ notebooklm generate revise-slide "Move the title up" --artifact art123 --slide 0
 notebooklm generate revise-slide "Remove taxonomy table" --artifact art123 --slide 3 --wait
 ```
 
-**Note:** The slide deck must already be fully generated before using `revise-slide`. Use `artifact list` to find the artifact ID.
+**Note:** The slide deck must already be fully generated before using `revise-slide`. Use `artifact list` to find the artifact ID. Partial artifact ID prefixes are accepted.
 
 ---
 
@@ -680,7 +680,7 @@ notebooklm generate revise-slides --artifact art123 \
   --revision "2:Simplify the bullets" --wait
 ```
 
-**Note:** The slide deck must already be fully generated before using `revise-slides`. Use `artifact list` to find the artifact ID.
+**Note:** The slide deck must already be fully generated before using `revise-slides`. Use `artifact list` to find the artifact ID. Partial artifact ID prefixes are accepted.
 
 ---
 

@@ -14,6 +14,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 - **Slide revision API** - Added `client.artifacts.revise_slides()` while keeping `revise_slide()` as a compatibility wrapper
 
+### Fixed
+- **Slide revision CLI artifact lookup** - `generate revise-slide` and `generate revise-slides` now resolve partial artifact IDs before calling NotebookLM, matching other artifact commands
+
 ## [0.3.4] - 2026-03-12
 
 ### Added
