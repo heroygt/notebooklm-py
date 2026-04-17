@@ -884,14 +884,13 @@ class ArtifactsAPI:
         ]
         return await self._call_generate(notebook_id, params)
 
-    async def revise_slide(
+    async def revise_slides(
         self,
         notebook_id: str,
         artifact_id: str,
-        slide_index: int,
-        prompt: str,
+        revisions: builtins.list[tuple[int, str]],
     ) -> GenerationStatus:
-        """Revise an individual slide in a completed slide deck using a prompt.
+        """Revise one or more slides in a completed slide deck.
 
         The slide deck must already be generated (status=COMPLETED) before
         calling this method. Use poll_status() to wait for the revision to complete.
@@ -899,20 +898,28 @@ class ArtifactsAPI:
         Args:
             notebook_id: The notebook ID.
             artifact_id: The slide deck artifact ID to revise.
-            slide_index: Zero-based index of the slide to revise.
-            prompt: Natural language instruction for the revision
-                    (e.g. "Move the title up", "Remove taxonomy section").
+            revisions: List of ``(slide_index, prompt)`` pairs. Each ``slide_index``
+                is zero-based. Each ``prompt`` is the natural-language instruction
+                for that slide revision.
 
         Returns:
             GenerationStatus with task_id for polling.
         """
-        if slide_index < 0:
-            raise ValidationError(f"slide_index must be >= 0, got {slide_index}")
+        if not revisions:
+            raise ValidationError("revisions must contain at least one (slide_index, prompt) pair")
+
+        revision_params: builtins.list[builtins.list[int | str]] = []
+        for slide_index, prompt in revisions:
+            if slide_index < 0:
+                raise ValidationError(f"slide_index must be >= 0, got {slide_index}")
+            if not prompt or not prompt.strip():
+                raise ValidationError(f"prompt for slide_index {slide_index} must not be empty")
+            revision_params.append([slide_index, prompt])
 
         params = [
             [2],
             artifact_id,
-            [[[slide_index, prompt]]],
+            [revision_params],
         ]
         try:
             result = await self._core.rpc_call(
@@ -933,6 +940,20 @@ class ArtifactsAPI:
                     error_code=str(e.rpc_code) if e.rpc_code is not None else None,
                 )
             raise
+
+    async def revise_slide(
+        self,
+        notebook_id: str,
+        artifact_id: str,
+        slide_index: int,
+        prompt: str,
+    ) -> GenerationStatus:
+        """Revise an individual slide in a completed slide deck using a prompt."""
+        return await self.revise_slides(
+            notebook_id=notebook_id,
+            artifact_id=artifact_id,
+            revisions=[(slide_index, prompt)],
+        )
 
     async def generate_data_table(
         self,

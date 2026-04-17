@@ -155,6 +155,40 @@ def resolve_language(language: str | None) -> str:
     return DEFAULT_LANGUAGE
 
 
+def parse_slide_revision_specs(revision_specs: tuple[str, ...]) -> list[tuple[int, str]]:
+    """Parse repeatable ``--revision`` CLI values into typed revisions.
+
+    Expected format per item: ``SLIDE_INDEX:PROMPT``.
+    """
+    parsed: list[tuple[int, str]] = []
+    for spec in revision_specs:
+        slide_part, sep, prompt_part = spec.partition(":")
+        if not sep:
+            raise click.BadParameter(
+                f"Invalid revision '{spec}'. Use the format SLIDE_INDEX:PROMPT.",
+                param_hint="'--revision'",
+            )
+
+        try:
+            slide_index = int(slide_part.strip())
+        except ValueError as exc:
+            raise click.BadParameter(
+                f"Invalid slide index in revision '{spec}'. Use the format SLIDE_INDEX:PROMPT.",
+                param_hint="'--revision'",
+            ) from exc
+
+        prompt = prompt_part.strip()
+        if not prompt:
+            raise click.BadParameter(
+                f"Revision '{spec}' is missing a prompt after the slide index.",
+                param_hint="'--revision'",
+            )
+
+        parsed.append((slide_index, prompt))
+
+    return parsed
+
+
 async def handle_generation_result(
     client: NotebookLMClient,
     notebook_id: str,
@@ -681,6 +715,76 @@ def generate_revise_slide(
                     artifact_id=artifact_id,
                     slide_index=slide_index,
                     prompt=description,
+                )
+
+            result = await generate_with_retry(
+                _generate, max_retries, "slide revision", json_output
+            )
+            await handle_generation_result(
+                client, nb_id_resolved, result, "slide revision", wait, json_output
+            )
+
+    return _run()
+
+
+@generate.command("revise-slides")
+@click.option(
+    "-n",
+    "--notebook",
+    "notebook_id",
+    default=None,
+    help="Notebook ID (uses current if not set)",
+)
+@click.option(
+    "-a",
+    "--artifact",
+    "artifact_id",
+    required=True,
+    help="Slide deck artifact ID to revise",
+)
+@click.option(
+    "--revision",
+    "revision_specs",
+    multiple=True,
+    required=True,
+    help='Repeatable revision in the format "SLIDE_INDEX:PROMPT"',
+)
+@click.option("--wait/--no-wait", default=False, help="Wait for completion (default: no-wait)")
+@retry_option
+@json_option
+@with_client
+def generate_revise_slides(
+    ctx,
+    notebook_id,
+    artifact_id,
+    revision_specs,
+    wait,
+    max_retries,
+    json_output,
+    client_auth,
+):
+    """Revise multiple slides in an existing slide deck.
+
+    Provide one or more ``--revision`` values in the format ``SLIDE_INDEX:PROMPT``.
+
+    \b
+    Example:
+      notebooklm generate revise-slides --artifact <id> \\
+          --revision "0:Move the title up" \\
+          --revision "3:Remove taxonomy" --wait
+    """
+    nb_id = require_notebook(notebook_id)
+    revisions = parse_slide_revision_specs(revision_specs)
+
+    async def _run():
+        async with NotebookLMClient(client_auth) as client:
+            nb_id_resolved = await resolve_notebook_id(client, nb_id)
+
+            async def _generate():
+                return await client.artifacts.revise_slides(
+                    nb_id_resolved,
+                    artifact_id=artifact_id,
+                    revisions=revisions,
                 )
 
             result = await generate_with_retry(

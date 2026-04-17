@@ -145,6 +145,7 @@ All generate commands support:
 | `cinematic-video [description]` | Alias for `video --format cinematic`; supports the same options | `generate cinematic-video "Documentary about quantum physics"` |
 | `slide-deck [description]` | `--format [detailed\|presenter]`, `--length [default\|short]`, `--wait` | `generate slide-deck` |
 | `revise-slide <description>` | `-a/--artifact <id>` (required), `--slide N` (required), `--wait` | `generate revise-slide "Move title up" --artifact <id> --slide 0` |
+| `revise-slides` | `-a/--artifact <id>` (required), repeatable `--revision "N:PROMPT"`, `--wait` | `generate revise-slides --artifact <id> --revision "0:Move title up" --revision "3:Remove taxonomy"` |
 | `quiz [description]` | `--difficulty [easy\|medium\|hard]`, `--quantity [fewer\|standard\|more]`, `--wait` | `generate quiz --difficulty hard` |
 | `flashcards [description]` | `--difficulty [easy\|medium\|hard]`, `--quantity [fewer\|standard\|more]`, `--wait` | `generate flashcards` |
 | `infographic [description]` | `--orientation [landscape\|portrait\|square]`, `--detail [concise\|standard\|detailed]`, `--style [auto\|sketch-note\|professional\|bento-grid\|editorial\|instructional\|bricks\|clay\|anime\|kawaii\|scientific]`, `--wait` | `generate infographic` |
@@ -647,6 +648,39 @@ notebooklm generate revise-slide "Remove taxonomy table" --artifact art123 --sli
 ```
 
 **Note:** The slide deck must already be fully generated before using `revise-slide`. Use `artifact list` to find the artifact ID.
+
+---
+
+### Generate: `revise-slides`
+
+Revise multiple slides in an existing slide deck using repeatable slide-specific prompts.
+
+```bash
+notebooklm generate revise-slides --artifact <id> --revision "N:PROMPT" [--revision "N:PROMPT"...] [OPTIONS]
+```
+
+**Required Options:**
+- `-a, --artifact ID` - The slide deck artifact ID to revise
+- `--revision "N:PROMPT"` - Repeatable slide-specific revision in the format `SLIDE_INDEX:PROMPT`
+
+**Optional:**
+- `--wait` - Wait for revision to complete
+- `--json` - Machine-readable output
+
+**Examples:**
+```bash
+# Revise the first and fourth slides in one request
+notebooklm generate revise-slides --artifact art123 \
+  --revision "0:Move the title up" \
+  --revision "3:Remove taxonomy table"
+
+# Submit multiple revisions and wait for completion
+notebooklm generate revise-slides --artifact art123 \
+  --revision "1:Make the chart larger" \
+  --revision "2:Simplify the bullets" --wait
+```
+
+**Note:** The slide deck must already be fully generated before using `revise-slides`. Use `artifact list` to find the artifact ID.
 
 ---
 

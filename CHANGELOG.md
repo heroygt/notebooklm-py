@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- **`generate revise-slides`** - Revise multiple slides in an existing slide deck in one request
+  - `notebooklm generate revise-slides --artifact <id> --revision "0:Move title up" --revision "3:Remove taxonomy"`
+
+### Changed
+- **Slide revision API** - Added `client.artifacts.revise_slides()` while keeping `revise_slide()` as a compatibility wrapper
+
 ## [0.3.4] - 2026-03-12
 
 ### Added

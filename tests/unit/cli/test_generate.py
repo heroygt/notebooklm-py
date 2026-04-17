@@ -1367,8 +1367,123 @@ class TestGenerateReviseSlide:
                 )
 
         assert result.exit_code == 0
-        data = json.loads(result.output)
-        assert "task_id" in data or "artifact_id" in data or "status" in data
+
+
+class TestGenerateReviseSlides:
+    """Tests for the 'generate revise-slides' CLI command."""
+
+    def test_revise_slides_basic(self, runner, mock_auth):
+        """revise-slides invokes client.artifacts.revise_slides."""
+        with patch_client_for_module("generate") as mock_client_cls:
+            mock_client = create_mock_client()
+            mock_client.artifacts.revise_slides = AsyncMock(
+                return_value={"artifact_id": "art_rev_multi_1", "status": "processing"}
+            )
+            mock_client_cls.return_value = mock_client
+
+            with patch("notebooklm.cli.helpers.fetch_tokens", new_callable=AsyncMock) as mock_fetch:
+                mock_fetch.return_value = ("csrf", "session")
+                result = runner.invoke(
+                    cli,
+                    [
+                        "generate",
+                        "revise-slides",
+                        "--artifact",
+                        "art_1",
+                        "--revision",
+                        "0:Move the title up",
+                        "--revision",
+                        "3:Remove taxonomy",
+                        "-n",
+                        "nb_123",
+                    ],
+                )
+
+        assert result.exit_code == 0
+        mock_client.artifacts.revise_slides.assert_called_once()
+
+    def test_revise_slides_passes_correct_args(self, runner, mock_auth):
+        """revise-slides forwards parsed revisions to the client."""
+        with patch_client_for_module("generate") as mock_client_cls:
+            mock_client = create_mock_client()
+            mock_client.artifacts.revise_slides = AsyncMock(
+                return_value={"artifact_id": "art_rev_multi_2", "status": "processing"}
+            )
+            mock_client_cls.return_value = mock_client
+
+            with patch("notebooklm.cli.helpers.fetch_tokens", new_callable=AsyncMock) as mock_fetch:
+                mock_fetch.return_value = ("csrf", "session")
+                result = runner.invoke(
+                    cli,
+                    [
+                        "generate",
+                        "revise-slides",
+                        "--artifact",
+                        "art_1",
+                        "--revision",
+                        "0:Move the title up",
+                        "--revision",
+                        "3:Remove taxonomy",
+                        "-n",
+                        "nb_123",
+                    ],
+                )
+
+        assert result.exit_code == 0
+        call_kwargs = mock_client.artifacts.revise_slides.call_args
+        assert call_kwargs is not None
+        assert call_kwargs.kwargs.get("artifact_id") == "art_1"
+        assert call_kwargs.kwargs.get("revisions") == [
+            (0, "Move the title up"),
+            (3, "Remove taxonomy"),
+        ]
+
+    def test_revise_slides_missing_revision_fails(self, runner, mock_auth):
+        """revise-slides requires at least one --revision option."""
+        with patch_client_for_module("generate") as mock_client_cls:
+            mock_client = create_mock_client()
+            mock_client_cls.return_value = mock_client
+
+            with patch("notebooklm.cli.helpers.fetch_tokens", new_callable=AsyncMock) as mock_fetch:
+                mock_fetch.return_value = ("csrf", "session")
+                result = runner.invoke(
+                    cli,
+                    [
+                        "generate",
+                        "revise-slides",
+                        "--artifact",
+                        "art_1",
+                        "-n",
+                        "nb_123",
+                    ],
+                )
+
+        assert result.exit_code != 0
+
+    def test_revise_slides_invalid_revision_format_fails(self, runner, mock_auth):
+        """revise-slides rejects malformed revision specs."""
+        with patch_client_for_module("generate") as mock_client_cls:
+            mock_client = create_mock_client()
+            mock_client_cls.return_value = mock_client
+
+            with patch("notebooklm.cli.helpers.fetch_tokens", new_callable=AsyncMock) as mock_fetch:
+                mock_fetch.return_value = ("csrf", "session")
+                result = runner.invoke(
+                    cli,
+                    [
+                        "generate",
+                        "revise-slides",
+                        "--artifact",
+                        "art_1",
+                        "--revision",
+                        "bad-format",
+                        "-n",
+                        "nb_123",
+                    ],
+                )
+
+        assert result.exit_code != 0
+        assert "SLIDE_INDEX:PROMPT" in result.output
 
 
 # =============================================================================

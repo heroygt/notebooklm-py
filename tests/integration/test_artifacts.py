@@ -229,6 +229,38 @@ class TestStudioContent:
         assert result.task_id == "artifact_456"
 
     @pytest.mark.asyncio
+    async def test_revise_slides_calls_revise_slide_rpc_with_multiple_pairs(
+        self,
+        auth_tokens,
+    ):
+        """Test revise_slides sends multiple slide/prompt pairs in one RPC call."""
+        async with NotebookLMClient(auth_tokens) as client:
+            with patch.object(
+                client.artifacts._core,
+                "rpc_call",
+                AsyncMock(return_value=[["artifact_789", "Slide Deck", "2024-01-05", None, 1]]),
+            ) as mock_rpc:
+                result = await client.artifacts.revise_slides(
+                    notebook_id="nb_123",
+                    artifact_id="artifact_456",
+                    revisions=[
+                        (0, "Move the title up a bit"),
+                        (3, "Remove taxonomy"),
+                    ],
+                )
+
+        assert result is not None
+        assert result.task_id == "artifact_789"
+        call_args = mock_rpc.call_args
+        assert call_args is not None
+        assert call_args.args[0] == RPCMethod.REVISE_SLIDE
+        assert call_args.args[1] == [
+            [2],
+            "artifact_456",
+            [[[0, "Move the title up a bit"], [3, "Remove taxonomy"]]],
+        ]
+
+    @pytest.mark.asyncio
     async def test_poll_studio_status(
         self,
         auth_tokens,
@@ -1409,6 +1441,38 @@ class TestReviseSlide:
                     artifact_id="artifact_456",
                     slide_index=0,
                     prompt="Fix this",
+                )
+
+    @pytest.mark.asyncio
+    async def test_revise_slides_empty_revisions_raises_validation_error(
+        self,
+        auth_tokens,
+        httpx_mock: HTTPXMock,
+        build_rpc_response,
+    ):
+        """revise_slides raises ValidationError when no revisions are provided."""
+        async with NotebookLMClient(auth_tokens) as client:
+            with pytest.raises(ValidationError, match="revisions must contain at least one"):
+                await client.artifacts.revise_slides(
+                    notebook_id="nb_123",
+                    artifact_id="artifact_456",
+                    revisions=[],
+                )
+
+    @pytest.mark.asyncio
+    async def test_revise_slides_empty_prompt_raises_validation_error(
+        self,
+        auth_tokens,
+        httpx_mock: HTTPXMock,
+        build_rpc_response,
+    ):
+        """revise_slides raises ValidationError when any prompt is empty."""
+        async with NotebookLMClient(auth_tokens) as client:
+            with pytest.raises(ValidationError, match="prompt for slide_index 2 must not be empty"):
+                await client.artifacts.revise_slides(
+                    notebook_id="nb_123",
+                    artifact_id="artifact_456",
+                    revisions=[(2, "   ")],
                 )
 
 
